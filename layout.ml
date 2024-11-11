@@ -1,14 +1,14 @@
-(* Definition of the tree's type, assuming it's a binary tree *)
-type 'a tree = 
-  | Empty 
-  | Node of { 
-      v: 'a; 
-      x: float ref; 
-      y: float ref; 
-      mod_val: float ref; 
-      l: 'a tree option; 
-      r: 'a tree option 
-    }
+type 'a node_data = {
+  v: 'a;
+  x: float ref;
+  y: float ref;
+  mod_val: float ref;
+  l: 'a tree option;
+  r: 'a tree option
+}
+and 'a tree =
+  | Empty
+  | Node of 'a node_data
 
 (* Set sibling distance to 1 *)
 let sibling_distance = 1.0
@@ -26,40 +26,31 @@ let rec apply_shift node shift =
 let rec initial_pos node depth is_right_child =
   match node with
   | Empty -> ()
-  | Node {v; x; y; mod_val; l; r} as n ->
-
+  | Node {v; x; y; mod_val; l; r} ->  (* removed 'as n' *)
       y := float_of_int depth;
-
       if is_right_child then x := 1.0 else x := 0.0;
-
-      (match l with 
+      
+      (match l with
       | Some left -> initial_pos left (depth + 1) false
       | None -> ());
-      
-      (match r with 
+     
+      (match r with
       | Some right -> initial_pos right (depth + 1) true
       | None -> ());
 
       match (l, r) with
-      | (None, None) ->
+      | (None, None) | (Some Empty, _) | (_, Some Empty) ->
           mod_val := 0.0
-
-      | (Some left_child, None) ->
-          left_child.x := !x
-
-      | (None, Some right_child) ->
-          right_child.x := !x
-
-      | (Some {x = lx; _} as left_child, Some {x = rx; _} as right_child) ->
-          let mid_point = (!lx +. !rx) /. 2.0 in
+      | (Some (Node left_node), None) ->
+          left_node.x := !x
+      | (None, Some (Node right_node)) ->
+          right_node.x := !x
+      | (Some (Node left_node), Some (Node right_node)) ->
+          let mid_point = (!(left_node.x) +. !(right_node.x)) /. 2.0 in
           x := mid_point;
+          let right_shift = !x +. sibling_distance -. !(right_node.x) in
+          apply_shift (Node right_node) right_shift
 
-          let right_shift = !x +. sibling_distance -. !rx in
-
-          (* Apply shift to the entire right subtree *)
-          apply_shift (Some right_child) right_shift;
-
-(* ------------------------------SECOND PASS----------------------------- *)
 let second_pass tree =
   (* Track if smallest x is negative *)
   let min_x = ref 0.0 in
@@ -78,11 +69,11 @@ let second_pass tree =
         
         (* Recursive call *)
         (match l with 
-         | Some left -> process_node left new_acc_mod 
-         | None -> ());
+          | Some left -> process_node left new_acc_mod 
+          | None -> ());
         (match r with 
-         | Some right -> process_node right new_acc_mod 
-         | None -> ())
+          | Some right -> process_node right new_acc_mod 
+          | None -> ())
   in
   process_node tree 0.0;
   !min_x
