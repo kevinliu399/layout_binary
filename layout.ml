@@ -60,27 +60,6 @@ let rec initial_pos node depth is_right_child =
           apply_shift (Some right_child) right_shift;
 
 (* ------------------------------SECOND PASS----------------------------- *)
-
-(* First define minimal required types and functions *)
-type 'a tree = 
-  | Empty 
-  | Node of { 
-      v: 'a; 
-      x: float ref; 
-      y: float ref; 
-      mod_val: float ref; 
-      l: 'a tree option; 
-      r: 'a tree option 
-    }
-
-let rec apply_shift node shift =
-  match node with
-  | Empty -> ()
-  | Node {x; mod_val; l; r; _} ->
-      x := !x +. shift;
-      (match l with Some left -> apply_shift left shift | None -> ());
-      (match r with Some right -> apply_shift right shift | None -> ())
-
 let second_pass tree =
   (* Track if smallest x is negative *)
   let min_x = ref 0.0 in
