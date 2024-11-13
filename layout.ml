@@ -16,6 +16,17 @@ and 'a tree =
   | Empty
   | Node of 'a node_data
 
+(* For testing purposes *)
+let rec print_positions node =
+  match node with
+  | Empty -> ()
+  | Node {v; x; y; mod_val; l; r} ->
+      Printf.printf "Node %s: x = %.2f, y = %.2f, mod_val = %.2f\n" 
+        v !x !y !mod_val;
+      (match l with Some left -> print_positions left | None -> ());
+      (match r with Some right -> print_positions right | None -> ())
+
+
 (* Set sibling distance to 1 *)
 let sibling_distance = 1.0
 
