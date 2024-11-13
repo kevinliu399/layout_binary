@@ -1,3 +1,9 @@
+(* By Kevin Liu, Yessine Chaari, David Zhou*)
+
+(****************************
+*  Type and helper function *
+*****************************)
+
 type 'a node_data = {
   v: 'a;
   x: float ref;
@@ -13,43 +19,52 @@ and 'a tree =
 (* Set sibling distance to 1 *)
 let sibling_distance = 1.0
 
-(* Helper method to apply a shift on a node *)
 let rec apply_shift node shift =
   match node with
   | Empty -> ()
   | Node {x; mod_val; l; r; _} ->
       x := !x +. shift;
-      (* mod_val := !mod_val +. shift; *)
       (match l with Some left -> apply_shift left shift | None -> ());
       (match r with Some right -> apply_shift right shift | None -> ())
 
-let rec initial_pos node depth is_right_child =
-  match node with
-  | Empty -> ()
-  | Node {v; x; y; mod_val; l; r} ->  (* removed 'as n' *)
-      y := float_of_int depth;
-      if is_right_child then x := 1.0 else x := 0.0;
-      
-      (match l with
-      | Some left -> initial_pos left (depth + 1) false
-      | None -> ());
-     
-      (match r with
-      | Some right -> initial_pos right (depth + 1) true
-      | None -> ());
+let get_x tree = match tree with
+  | Empty -> 0.0
+  | Node n -> !(n.x)
 
-      match (l, r) with
-      | (None, None) | (Some Empty, _) | (_, Some Empty) ->
-          mod_val := 0.0
-      | (Some (Node left_node), None) ->
-          left_node.x := !x
-      | (None, Some (Node right_node)) ->
-          right_node.x := !x
-      | (Some (Node left_node), Some (Node right_node)) ->
-          let mid_point = (!(left_node.x) +. !(right_node.x)) /. 2.0 in
-          x := mid_point;
-          let right_shift = !x +. sibling_distance -. !(right_node.x) in
-          apply_shift (Node right_node) right_shift
+(******************
+*  Main Algorithm *
+*******************)
+
+let rec first_pass_p1 tree is_right prev =
+  match tree with
+  | Empty -> ()
+  | Node n ->
+      (* Step 1: Set initial x based on whether it's a right child *)
+      n.x := (if is_right then 1.0 else 0.0);
+      
+      (* Process children *)
+      (match n.l with 
+      | Some l -> first_pass_p1 l false (Some tree)
+      | None -> ());
+      (match n.r with
+      | Some r -> first_pass_p1 r true (Some tree)
+      | None -> ());
+      
+      (* Step 2: If node has children, calculate children's midpoint *)
+      let children_midpoint = match (n.l, n.r) with
+        | (Some l, Some r) -> (get_x l +. get_x r) /. 2.0
+        | (Some l, None) -> get_x l
+        | (None, Some r) -> get_x r
+        | (None, None) -> !(n.x)
+      in
+
+      (* Step 3: Handle the two special cases *)
+      if prev = None && (n.l != None || n.r != None) then
+        (* Case 1: Leftmost node with children - center it *)
+        n.x := children_midpoint
+      else if prev != None && (n.l != None || n.r != None) then
+        (* Case 2: Non-leftmost node with children - set mod *)
+        n.mod_val := !(n.x) -. children_midpoint
 
 let second_pass tree =
   (* Track if smallest x is negative *)
@@ -78,6 +93,7 @@ let second_pass tree =
   process_node tree 0.0;
   !min_x
 
+(* Third Pass *)
 (* Fix negative value if necessary *)
 let normalize_coordinates tree min_x =
   if min_x < 0.0 then
