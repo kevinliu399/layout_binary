@@ -5,7 +5,8 @@ type 'a node_data = {
   y: float ref;
   mod_val: float ref;
   l: 'a tree option;
-  r: 'a tree option
+  r: 'a tree option;
+  shift_val = ref float
 }
 and 'a tree =
   | Empty
