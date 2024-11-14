@@ -1,5 +1,7 @@
+(* By Kevin Liu (261136372), David Zhou(261135446), and Yessine Chaari (261179816) *)
+
 (********************************************************************
-******************** Types and helper functions *********************
+******************** TYPES AND HELPER FUNCTIONS *********************
 ********************************************************************)
 type 'a node_data = {
   v: 'a;
@@ -42,79 +44,24 @@ exception NotImplemented
 ******************** WRITE YOUR CODE BELOW **************************
 ********************************************************************)
 
-(* First Pass *)
+(* Exercise 1 : Assign initial value *)
 let rec first_pass_p1 tree is_right prev depth =
-  match tree with
-  | Empty -> ()
-  | Node n ->
-      (* Initially position nodes *)
-      n.x := (if is_right then !(n.x) +. 1.0 else 0.0);
-      n.y := float_of_int depth;
-      
-      (* Process children *)
-      (match n.l with 
-       | Some l -> first_pass_p1 l false (Some tree) (depth + 1)
-       | None -> ());
-      (match n.r with
-       | Some r -> first_pass_p1 r true (Some tree) (depth + 1)
-       | None -> ());
-      
-      (* Calculate midpoint of children *)
-      let children_midpoint = match (n.l, n.r) with
-        | (Some l, Some r) -> (get_x l +. get_x r) /. 2.0
-        | (Some l, None) -> get_x l
-        | (None, Some r) -> get_x r
-        | (None, None) -> !(n.x)
-      in
-
-      (* For left nodes with children, shift based on children's midpoint *)
-      if not is_right && (n.l != None || n.r != None) then
-        let original_x = !(n.x) in
-        n.x := children_midpoint;
-        let shift_amount = children_midpoint -. original_x in
-        
-        (* Apply the same shift to the right sibling *)
-        match prev with
-        | Some (Node parent) -> 
-            (match parent.r with
-             | Some (Node right_sibling) ->
-                 let new_right_x = !(right_sibling.x) +. shift_amount in
-                 right_sibling.x := new_right_x;
-                 (* Debug print
-                 Printf.printf "Shifting right sibling %s from %.1f to %.1f (shift: %.1f)\n" 
-                   right_sibling.v !(right_sibling.x) new_right_x shift_amount; *)
-             | Some Empty | None -> ())
-        | None | Some Empty -> ()
-      else if is_right && (n.l != None || n.r != None) then
-        (* Case 2: Non-leftmost node with children - set mod *)
-        n.mod_val := !(n.x) -. children_midpoint
+  raise NotImplemented
 
 
 (* Second Pass *)
 let second_pass tree =
-  let rec process_node node acc_mod =
-    match node with
-    | Empty -> ()
-    | Node {x; mod_val; l; r; _} ->
-        let final_x = !x +. acc_mod in
-        x := final_x;
-        
-        let new_acc_mod = acc_mod +. !mod_val in
-        
-        (match l with Some left -> process_node left new_acc_mod | None -> ());
-        (match r with Some right -> process_node right new_acc_mod | None -> ())
-  in
-  process_node tree 0.0
+  raise NotImplemented
 
-(* Main function *)
+
+(********************************************************************
+************** BELOW IS SOME TREES TO HELP YOU  *********************
+********************************************************************)
+
 let main tree =
   first_pass_p1 tree false None 0;
   second_pass tree;
   ()
-
-(********************************************************************
-*********** BELOW IS THE TESTER - DO NOT MODIFY *********************
-********************************************************************)
 
 let create_node value x_val y_val mod_val left right =
   Node {
@@ -144,7 +91,7 @@ let test_tree2 =
                       None
                       (Some (create_node "D" 0.0 0.0 0.0 None None))))))
 
-let test_tree3 = 
+let test_tree = 
   create_node "A" 0.0 0.0 0.0
     (Some (create_node "B" 0.0 0.0 0.0
              (Some (create_node "C" 0.0 0.0 0.0
@@ -160,12 +107,11 @@ let rec print_tree_coords = function
         v !x !y !mod_val;
       (match l with Some t -> print_tree_coords t | None -> ());
       (match r with Some t -> print_tree_coords t | None -> ())
-      
 
 let () =
   Printf.printf "Before first pass:\n";
   print_tree_coords test_tree;
   
   Printf.printf "\nAfter all passes:\n";
-  main test_tree;  (* Modify test_tree name to test different trees*)
+  main test_tree;  
   print_tree_coords test_tree

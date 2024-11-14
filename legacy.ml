@@ -35,16 +35,6 @@ let get_x tree = match tree with
   | Empty -> 0.0
   | Node n -> !(n.x)
 
-(* For testing purposes *)
-let rec print_positions node =
-  match node with
-  | Empty -> ()
-  | Node {v; x; y; mod_val; l; r} ->
-      Printf.printf "Node %s: x = %.2f, y = %.2f, mod_val = %.2f\n" 
-        v !x !y !mod_val;
-      (match l with Some left -> print_positions left | None -> ());
-      (match r with Some right -> print_positions right | None -> ())
-
 (* Main Algorithm *)
 let rec first_pass_p1 tree is_right prev depth =
   match tree with
@@ -111,18 +101,13 @@ let second_pass tree =
         (match r with Some right -> process_node right new_acc_mod | None -> ())
   in
   process_node tree 0.0;
-  !min_x
-
-(* Third Pass *)
-let normalize_coordinates tree min_x =
-  if min_x < 0.0 then
-    apply_shift tree (abs_float min_x)
+  !min_x 
 
 (* Main function *)
 let main tree =
   first_pass_p1 tree false None 0;
   let min_x = second_pass tree in
-  normalize_coordinates tree min_x
+  ()
 
 (* Test case helper - Fixed create_node function *)
 let create_node value x_val y_val mod_val left right =
