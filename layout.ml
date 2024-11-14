@@ -207,7 +207,7 @@ let second_pass tree =
 (* Main function *)
 let main tree =
   first_pass_p1 tree false None 0;
-  start_first_pass_part2 tree
+  start_first_pass_part2 tree;
   second_pass tree;
   ()
 
