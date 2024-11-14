@@ -4,9 +4,9 @@ type 'a node_data = {
   x: float ref;
   y: float ref;
   mod_val: float ref;
+  shift_val: float ref;
   l: 'a tree option;
   r: 'a tree option;
-  shift_val: ref float
 }
 and 'a tree =
   | Empty
@@ -125,26 +125,27 @@ let main tree =
   let min_x = second_pass tree in
   normalize_coordinates tree min_x
 
-(* Test case helper - Fixed create_node function *)
-let create_node value x_val y_val mod_val left right =
+(* Updated create_node function with shift_val parameter *)
+let create_node value x_val y_val mod_val shift_val left right =
   Node {
     v = value;
     x = ref x_val;
     y = ref y_val;
     mod_val = ref mod_val;
+    shift_val = ref shift_val;
     l = left;
     r = right
   }
 
-(* Test tree creation *)
+(* Test tree creation with shift_val included *)
 let test_tree = 
-  create_node "A" 0.0 0.0 0.0
-    (Some (create_node "B" 0.0 0.0 0.0
-             (Some (create_node "D" 0.0 0.0 0.0 None None))
-             (Some (create_node "E" 0.0 0.0 0.0 None None))))
-    (Some (create_node "C" 0.0 0.0 0.0
-             (Some (create_node "F" 0.0 0.0 0.0 None None))
-             (Some (create_node "G" 0.0 0.0 0.0 None None))))
+  create_node "A" 0.0 0.0 0.0 0.0
+    (Some (create_node "B" 0.0 0.0 0.0 0.0
+             (Some (create_node "D" 0.0 0.0 0.0 0.0 None None))
+             (Some (create_node "E" 0.0 0.0 0.0 0.0 None None))))
+    (Some (create_node "C" 0.0 0.0 0.0 0.0
+             (Some (create_node "F" 0.0 0.0 0.0 0.0 None None))
+             (Some (create_node "G" 0.0 0.0 0.0 0.0 None None))))
 
 (* Print function *)
 let rec print_tree_coords = function
