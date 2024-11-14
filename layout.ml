@@ -129,32 +129,46 @@ let create_node value x_val y_val mod_val shift_val left right =
   }
 
 (* Test tree creation with shift_val included *)
+(* Updated create_node function with shift_val parameter *)
+let create_node value x_val y_val mod_val shift_val left right =
+  Node {
+    v = value;
+    x = ref x_val;
+    y = ref y_val;
+    mod_val = ref mod_val;
+    shift_val = ref shift_val;
+    l = left;
+    r = right
+  }
+
+(* Test tree creation with shift_val included *)
 let test_tree = 
-  create_node "A" 0.0 0.0 0.0
-    (Some (create_node "B" 0.0 0.0 0.0
-             (Some (create_node "D" 0.0 0.0 0.0 None None))
-             (Some (create_node "E" 0.0 0.0 0.0 None None))))
-    (Some (create_node "C" 0.0 0.0 0.0
-             (Some (create_node "F" 0.0 0.0 0.0 None None))
-             (Some (create_node "G" 0.0 0.0 0.0 None None))))
+  create_node "A" 0.0 0.0 0.0 0.0
+    (Some (create_node "B" 0.0 0.0 0.0 0.0
+             (Some (create_node "D" 0.0 0.0 0.0 0.0 None None))
+             (Some (create_node "E" 0.0 0.0 0.0 0.0 None None))))
+    (Some (create_node "C" 0.0 0.0 0.0 0.0
+             (Some (create_node "F" 0.0 0.0 0.0 0.0 None None))
+             (Some (create_node "G" 0.0 0.0 0.0 0.0 None None))))
 
 let test_tree2 = 
-  create_node "A" 0.0 0.0 0.0
+  create_node "A" 0.0 0.0 0.0 0.0
     None
-    (Some (create_node "B" 0.0 0.0 0.0
-             (Some (create_node "E" 0.0 0.0 0.0 None None))  
-             (Some (create_node "C" 0.0 0.0 0.0
+    (Some (create_node "B" 0.0 0.0 0.0 0.0
+             (Some (create_node "E" 0.0 0.0 0.0 0.0 None None))  
+             (Some (create_node "C" 0.0 0.0 0.0 0.0
                       None
-                      (Some (create_node "D" 0.0 0.0 0.0 None None))))))
+                      (Some (create_node "D" 0.0 0.0 0.0 0.0 None None))))))
 
 let test_tree3 = 
-  create_node "A" 0.0 0.0 0.0
-    (Some (create_node "B" 0.0 0.0 0.0
-             (Some (create_node "C" 0.0 0.0 0.0
-                      (Some (create_node "D" 0.0 0.0 0.0 None None))
+  create_node "A" 0.0 0.0 0.0 0.0
+    (Some (create_node "B" 0.0 0.0 0.0 0.0
+             (Some (create_node "C" 0.0 0.0 0.0 0.0
+                      (Some (create_node "D" 0.0 0.0 0.0 0.0 None None))
                       None))
              None))
     None
+
 
 (* Print function *)
 let rec print_tree_coords = function
