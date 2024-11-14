@@ -6,8 +6,9 @@ type 'a node_data = {
   x: float ref;
   y: float ref;
   mod_val: float ref;
+  shift_val: float ref;
   l: 'a tree option;
-  r: 'a tree option
+  r: 'a tree option;
 }
 and 'a tree =
   | Empty
@@ -122,10 +123,12 @@ let create_node value x_val y_val mod_val left right =
     x = ref x_val;
     y = ref y_val;
     mod_val = ref mod_val;
+    shift_val = ref shift_val;
     l = left;
     r = right
   }
 
+(* Test tree creation with shift_val included *)
 let test_tree = 
   create_node "A" 0.0 0.0 0.0
     (Some (create_node "B" 0.0 0.0 0.0
