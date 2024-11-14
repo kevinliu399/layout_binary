@@ -1,4 +1,4 @@
-(* Helper function to calculate actual x coordinate with modifications *)
+(* Calculate x coordinate should use both mods and shifts *)
 let calculate_x_coordinate node ancestor_mods ancestor_shifts =
   !(node.x) +. 
   List.fold_left (+.) 0.0 ancestor_mods +.
@@ -83,7 +83,11 @@ let rec first_pass_part2 tree ancestor_mods ancestor_shifts =
             | Some left ->
                 let shift = check_subtree_conflicts right left 1.0 ancestor_mods ancestor_shifts in
                 if shift > 0.0 then
-                  n.shift_val := !(n.shift_val) +. shift
+                  (* Store the shift in the right child's mod_val instead of parent's shift_val *)
+                  (match right with
+                   | Node right_data -> 
+                       right_data.shift_val := !(right_data.shift_val) +. shift
+                   | Empty -> ())
             | None -> ())
        | None -> ())
 
