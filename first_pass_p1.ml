@@ -3,6 +3,7 @@ type 'a node_data = {
   x: float ref;
   y: float ref;
   mod_val: float ref;
+  (* shift_val: float ref; *)
   l: 'a tree option;
   r: 'a tree option
 }
@@ -47,6 +48,8 @@ let rec first_pass_p1 tree is_right prev =
         n.mod_val := !(n.x) -. children_midpoint
 
 
+
+(* TESTS *)
 
 let make_leaf v = Node {
   v = v;
@@ -140,6 +143,36 @@ let run_tests () =
         | None -> ());
        (match n.r with
         | Some r -> test "Complex tree - c node x" 1.0 (get_x r)
+        | None -> ())
+   | Empty -> ());;
+  
+  (* Test 5 *)
+  let t5 = make_node 'a'
+    (Node {
+      v = 'b';
+      x = ref 0.0;
+      y = ref 0.0;
+      mod_val = ref 0.0;
+      l = Some (make_leaf 'd');
+      r = Some (make_leaf 'e');
+    })
+    (Node {
+      v = 'c';
+      x = ref 0.0;
+      y = ref 0.0;
+      mod_val = ref 0.0;
+      l = Some (make_leaf 'f');
+      r = Some (make_leaf 'g')
+    }) in
+  first_pass_p1 t5 false None;
+  test "Complex tree - root x" 0.5 (get_x t5);
+  (match t5 with
+   | Node n -> 
+       (match n.l with
+        | Some l -> test "Complex tree - b node x" 0.5 (get_x l); 
+        | None -> ());
+       (match n.r with
+        | Some r -> test "Complex tree - c node x" 1.5 (get_x r)
         | None -> ())
    | Empty -> ());;
 

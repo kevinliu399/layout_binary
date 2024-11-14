@@ -45,6 +45,7 @@ let second_pass tree =
          | Some right -> process_node right new_acc_mod 
          | None -> ())
   in
+
   process_node tree 0.0;
   !min_x
 
