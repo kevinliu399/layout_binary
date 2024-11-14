@@ -117,7 +117,7 @@ let main tree =
 *********** BELOW IS THE TESTER - DO NOT MODIFY *********************
 ********************************************************************)
 
-let create_node value x_val y_val mod_val left right =
+let create_node value x_val y_val mod_val shift_val left right =
   Node {
     v = value;
     x = ref x_val;
