@@ -156,11 +156,12 @@ let test_tree3 =
              None))
     None
 
+(* Print function *)
 let rec print_tree_coords = function
   | Empty -> ()
-  | Node {v; x; y; mod_val; l; r} ->
-      Printf.printf "Node %s: (x=%.1f, y=%.1f, mod=%.1f)\n" 
-        v !x !y !mod_val;
+  | Node {v; x; y; mod_val; shift_val; l; r} ->
+      Printf.printf "Node %s: (x=%.1f, y=%.1f, mod=%.1f, shift=%.1f)\n" 
+        v !x !y !mod_val !shift_val;
       (match l with Some t -> print_tree_coords t | None -> ());
       (match r with Some t -> print_tree_coords t | None -> ())
       
