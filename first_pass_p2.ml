@@ -1,3 +1,9 @@
+(* Helper function to calculate actual x coordinate with modifications *)
+let calculate_x_coordinate node ancestor_mods ancestor_shifts =
+  !(node.x) +. 
+  List.fold_left (+.) 0.0 ancestor_mods +.
+  List.fold_left (+.) 0.0 ancestor_shifts
+
 (* Helper function to get the leftmost descendant at a given depth *)
 let rec get_leftmost_descendant tree current_depth target_depth =
   if current_depth = target_depth then Some tree
@@ -34,12 +40,8 @@ let rec get_max_depth = function
         | None -> 0 in
       1 + max left_depth right_depth
 
-(* Helper function to calculate actual x coordinate with modifications *)
-let calculate_x_coordinate node ancestor_mods =
-  !(node.x) +. List.fold_left (+.) 0.0 ancestor_mods
-
 (* Function to check subtree conflicts between a right subtree and a left subtree *)
-let check_subtree_conflicts right_tree left_tree subtree_distance ancestor_mods =
+let check_subtree_conflicts right_tree left_tree subtree_distance ancestor_mods ancestor_shifts =
   let max_depth = max (get_max_depth right_tree) (get_max_depth left_tree) in
   let max_shift = ref 0.0 in
   
@@ -49,8 +51,8 @@ let check_subtree_conflicts right_tree left_tree subtree_distance ancestor_mods 
            get_leftmost_descendant right_tree 0 depth) with
     | Some (Node left_contour), Some (Node right_contour) ->
         (* Calculate actual coordinates considering all modifications *)
-        let left_x = calculate_x_coordinate left_contour ancestor_mods in
-        let right_x = calculate_x_coordinate right_contour ancestor_mods in
+        let left_x = calculate_x_coordinate left_contour ancestor_mods ancestor_shifts in
+        let right_x = calculate_x_coordinate right_contour ancestor_mods ancestor_shifts in
         
         (* Calculate required shift to maintain minimum distance *)
         let required_shift = left_x +. subtree_distance -. right_x in
@@ -61,30 +63,30 @@ let check_subtree_conflicts right_tree left_tree subtree_distance ancestor_mods 
   !max_shift
 
 (* Main function for Part 2 of First Pass *)
-let rec first_pass_part2 tree ancestor_mods =
+let rec first_pass_part2 tree ancestor_mods ancestor_shifts =
   match tree with
   | Empty -> ()
   | Node n ->
       (* Process left subtree *)
       (match n.l with 
-       | Some left -> first_pass_part2 left (!(n.mod_val) :: ancestor_mods)
+       | Some left -> first_pass_part2 left (!(n.mod_val) :: ancestor_mods) (!(n.shift_val) :: ancestor_shifts)
        | None -> ());
       
       (* Process right subtree *)
       (match n.r with
        | Some right -> 
            (* Process the right subtree first *)
-           first_pass_part2 right (!(n.mod_val) :: ancestor_mods);
+           first_pass_part2 right (!(n.mod_val) :: ancestor_mods) (!(n.shift_val) :: ancestor_shifts);
            
            (* Check for conflicts with the left subtree *)
            (match n.l with
             | Some left ->
-                let shift = check_subtree_conflicts right left sibling_distance ancestor_mods in
+                let shift = check_subtree_conflicts right left 1.0 ancestor_mods ancestor_shifts in
                 if shift > 0.0 then
-                  n.mod_val := !(n.mod_val) +. shift
+                  n.shift_val := !(n.shift_val) +. shift
             | None -> ())
        | None -> ())
 
 (* Main entry point that initiates the second part of first pass *)
 let start_first_pass_part2 tree =
-  first_pass_part2 tree []
+  first_pass_part2 tree [] []
