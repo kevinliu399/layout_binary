@@ -7,6 +7,7 @@ type 'a node_data = {
   y: float ref;
   mod_val: float ref;
   shift_val: float ref;
+  xf: float ref; 
   l: 'a tree option;
   r: 'a tree option;
 }
@@ -222,21 +223,9 @@ let create_node value x_val y_val mod_val shift_val left right =
     y = ref y_val;
     mod_val = ref mod_val;
     shift_val = ref shift_val;
+    xf = ref 0.0;  
     l = left;
-    r = right
-  }
-
-(* Test tree creation with shift_val included *)
-(* Updated create_node function with shift_val parameter *)
-let create_node value x_val y_val mod_val shift_val left right =
-  Node {
-    v = value;
-    x = ref x_val;
-    y = ref y_val;
-    mod_val = ref mod_val;
-    shift_val = ref shift_val;
-    l = left;
-    r = right
+    r = right;
   }
 
 (* Test tree creation with shift_val included *)
@@ -271,12 +260,11 @@ let test_tree3 =
 (* Print function *)
 let rec print_tree_coords = function
   | Empty -> ()
-  | Node {v; x; y; mod_val; shift_val; l; r} ->
-      Printf.printf "Node %s: (x=%.1f, y=%.1f, mod=%.1f, shift=%.1f)\n" 
-        v !x !y !mod_val !shift_val;
+  | Node {v; x; y; mod_val; shift_val; xf; l; r} ->
+      Printf.printf "Node %s: (x=%.1f, y=%.1f, mod=%.1f, shift=%.1f, xf=%.1f)\n" 
+        v !x !y !mod_val !shift_val !xf;
       (match l with Some t -> print_tree_coords t | None -> ());
       (match r with Some t -> print_tree_coords t | None -> ())
-      
 
 let () =
   Printf.printf "Before first pass:\n";
