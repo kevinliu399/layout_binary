@@ -191,19 +191,27 @@ let start_first_pass_part2 tree =
 
 (* Second Pass *)
 let second_pass tree =
-  let rec process_node node acc_mod =
+  let rec process_node node acc_mod shift_value =
     match node with
     | Empty -> ()
     | Node {x; mod_val; l; r; _} ->
-        let final_x = !x +. acc_mod in
+        let final_x = !x +. acc_mod +. shift_value in
         x := final_x;
         
         let new_acc_mod = acc_mod +. !mod_val in
         
-        (match l with Some left -> process_node left new_acc_mod | None -> ());
-        (match r with Some right -> process_node right new_acc_mod | None -> ())
+        (* Apply the shift recursively to the entire subtree *)
+        let new_shift_value = shift_value +. !shift_val in
+        
+        (match l with 
+         | Some left -> process_node left new_acc_mod new_shift_value
+         | None -> ());
+        (match r with 
+         | Some right -> process_node right new_acc_mod new_shift_value
+         | None -> ())
+
   in
-  process_node tree 0.0
+  process_node tree 0.0 0.0
 
 (* Main function *)
 let main tree =
