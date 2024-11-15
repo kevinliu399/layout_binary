@@ -5,7 +5,7 @@ type 'a node_data = {
   y: float ref;
   mod_val: float ref;
   shift_val: float ref;
-  xf: float ref;  (* Accumulated field for shifts and mods *)
+  xf: float ref; 
   l: 'a tree option;
   r: 'a tree option;
 }
@@ -65,7 +65,7 @@ let check_subtree_conflicts right_tree left_tree subtree_distance =
   for depth = 0 to max_depth do
     match (get_rightmost_descendant left_tree 0 depth, 
            get_leftmost_descendant right_tree 0 depth) with
-    | Some (Node left_contour), Some (Node right_contour) ->
+    | Some (Node left_contour), Some (Node right_contour) -> 
         (* Use only xf value since it already includes the base x position *)
         let left_x = !(left_contour.xf) in
         let right_x = !(right_contour.xf) in
@@ -77,40 +77,37 @@ let check_subtree_conflicts right_tree left_tree subtree_distance =
   done;
   !max_shift
 
-(* First pass for accumulating xf modifications and shifts *)
-let rec first_pass_part2 tree ancestor_mods ancestor_shifts =
+(* First pass for accumulating xf modifications without shifts *)
+let rec first_pass_part2 tree ancestor_mods =
   match tree with
   | Empty -> ()
   | Node n ->
       (* Calculate accumulated xf before processing children *)
       let current_mods = List.fold_left (+.) 0.0 ancestor_mods in
-      let current_shifts = List.fold_left (+.) 0.0 ancestor_shifts in
-      n.xf := !(n.x) +. current_mods +. current_shifts;
+      n.xf := !(n.x) +. current_mods;  
 
       (* Process left subtree *)
       (match n.l with 
-       | Some left -> first_pass_part2 left (!(n.mod_val) :: ancestor_mods) (!(n.shift_val) :: ancestor_shifts)
+       | Some left -> first_pass_part2 left (!(n.mod_val) :: ancestor_mods)
        | None -> ());
 
       (* Process right subtree *)
       (match n.r with
        | Some right -> 
-           first_pass_part2 right (!(n.mod_val) :: ancestor_mods) (!(n.shift_val) :: ancestor_shifts);
+           first_pass_part2 right (!(n.mod_val) :: ancestor_mods);
 
            (* Check conflicts with left subtree *)
            (match n.l with
-            | Some left ->
+            | Some left -> 
                 let shift = check_subtree_conflicts right left 1.0 in
                 if shift > 0.0 then
                   (match right with
                    | Node right_data -> 
-                       right_data.shift_val := shift;
-                       (* Update xf for the right subtree *)
-                       right_data.xf := !(right_data.xf) +. shift
+                       right_data.shift_val := shift;  
                    | Empty -> ())
             | None -> ())
        | None -> ())
 
-(* Start the first pass with an empty ancestor list for mods and shifts *)
+(* Start the first pass with an empty ancestor list for mods *)
 let start_first_pass_part2 tree =
-  first_pass_part2 tree [] []
+  first_pass_part2 tree [] 
