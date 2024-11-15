@@ -196,8 +196,8 @@ let second_pass tree =
     match node with
     | Empty -> ()
     | Node {x; mod_val; shift_val; l; r; _} ->
-        (* Apply the accumulated shift to the node and its descendants *)
-        let final_x = !x +. acc_mod +. acc_shift in
+        (* Apply the accumulated shift to the node's position, including its own shift *)
+        let final_x = !x +. acc_mod +. acc_shift +. !shift_val in
         x := final_x;
 
         let new_acc_mod = acc_mod +. !mod_val in
@@ -208,6 +208,7 @@ let second_pass tree =
         (match r with Some right -> process_node right new_acc_mod new_acc_shift | None -> ())
   in
   process_node tree 0.0 0.0
+
 
 
 (* Main function *)
