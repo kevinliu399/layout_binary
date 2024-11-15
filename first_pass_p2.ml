@@ -30,7 +30,7 @@ let rec get_rightmost_descendant tree current_depth target_depth =
   match tree with
   | Empty -> None
   | Node n when current_depth = target_depth -> Some (Node n)
-  | Node n ->
+  | Node n -> 
       let right_result = match n.r with
         | Some right -> get_rightmost_descendant right (current_depth + 1) target_depth
         | None -> None in
@@ -81,8 +81,8 @@ let rec first_pass_part2 tree ancestor_mods ancestor_shifts =
   match tree with
   | Empty -> ()
   | Node n ->
-      (* Accumulate all shifts and mods from ancestors *)
-      n.xf := List.fold_left (+.) 0.0 ancestor_mods +. List.fold_left (+.) 0.0 ancestor_shifts;
+      (* Accumulate all shifts and mods from ancestors, including current node's x *)
+      n.xf := List.fold_left (+.) 0.0 ancestor_mods +. List.fold_left (+.) 0.0 ancestor_shifts +. !(n.x);
 
       (* Recur on the left subtree *)
       (match n.l with 
