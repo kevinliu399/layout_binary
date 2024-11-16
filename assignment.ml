@@ -3,7 +3,6 @@
 (********************************************************************
 ******************** TYPES AND HELPER FUNCTIONS *********************
 ********************************************************************)
-exception NotImplemented
 
 type 'a node_data = {
   v: 'a;
@@ -19,76 +18,64 @@ and 'a tree =
   | Empty
   | Node of 'a node_data
 
+exception NotImplemented
+
 (* Retrieves the x coordinate of a node *)
 let get_x (tree: 'a tree) : float = 
   match tree with
   | Empty -> 0.0
   | Node n -> !(n.x)
 
-(* Get the maximum depth of a tree *)
-let rec get_max_depth (tree: 'a tree) : int =
-  match tree with
-  | Empty -> 0
-  | Node n ->
-      let left_depth = match n.l with
-        | Some left -> get_max_depth left
-        | None -> 0 in
-      let right_depth = match n.r with
-        | Some right -> get_max_depth right
-        | None -> 0 in
-      1 + max left_depth right_depth
+(* Helpers for traversal 2*)
+let shift_distance = 0.5
+type contour = {
+  leftmost: float;   
+  rightmost: float;  
+  height: int        
+}
+let make_empty_contour () = {
+  leftmost = max_float;
+  rightmost = -.max_float;
+  height = 0
+}
+(* Merge two contours and return required shift amount *)
+let merge_contours left_c right_c min_distance =
+  let separation = right_c.leftmost -. left_c.rightmost in
+  if separation < min_distance then
+    let shift = min_distance -. separation in
+    Printf.printf "Conflict detected! Required shift: %.2f\n" shift;
+    shift
+  else
+    0.0
 
-(* Get the descendant at a specific depth *)
-let rec get_descendant (tree: 'a tree) (current_depth: int) (target_depth: int)
-    (first: 'a node_data -> 'a tree option) (second: 'a node_data -> 'a tree option) : 'a tree option =
-  match tree with
-  | Empty -> None
-  | Node n when current_depth = target_depth -> Some (Node n)
-  | Node n ->
-      (* Try the first direction *)
-      let first_child = first n in
-      match first_child with
-      | Some child -> 
-          let first_result = get_descendant child (current_depth + 1) target_depth first second in
-          if first_result <> None then first_result
-          else (
-            (* If first direction fails, try the second direction *)
-            let second_child = second n in
-            match second_child with
-            | Some child -> get_descendant child (current_depth + 1) target_depth first second
-            | None -> None
-          )
-      | None -> 
-          (* If first direction doesn't exist, try the second direction *)
-          let second_child = second n in
-          match second_child with
-          | Some child -> get_descendant child (current_depth + 1) target_depth first second
-          | None -> None
-
-(* Get rightmost descendant: tries right first, then left *)
-let get_rightmost_descendant tree current_depth target_depth =
-  get_descendant tree current_depth target_depth (fun n -> n.r) (fun n -> n.l)  
-
-(* Get leftmost descendant: tries left first, then right *)
-let get_leftmost_descendant tree current_depth target_depth =
-  get_descendant tree current_depth target_depth (fun n -> n.l) (fun n -> n.r) 
+let get_xf tree = match tree with
+| Empty -> 0.0
+| Node n -> !(n.xf)
 
 (********************************************************************
 ************************** MAIN ALGORITHM ***************************
 ********************************************************************)
 
-(* Applies a shift only to the right sibling of a node *)
-let rec apply_shift_to_siblings (prev: 'a node_data option) (shift: float) : unit =
-  raise NotImplemented
-
 let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (depth: int) : unit =
   raise NotImplemented
 
-let rec traversal_two (tree: 'a tree) (ancestor_mods: float list) : unit =
+let rec traversal_two (tree: 'a tree) (ancestor_mods: float list) (right_sibling: 'a tree option) : contour = 
+  (* Refer to the top of the code for helper functions that can assist you in the implementation *)
   raise NotImplemented
 
 let traversal_three (tree: 'a tree) : unit =
   raise NotImplemented
 
-let fix_root (tree: 'a tree) : unit =
+let fix_root (tree: 'a tree) =
   raise NotImplemented
+
+(********************************************************************
+************************** MAIN FUNCTION ***************************
+********************************************************************)
+
+let main tree =
+  traversal_one tree false None 0;
+  traversal_two tree [] None;
+  traversal_three tree;
+  fix_root tree;
+  ()
