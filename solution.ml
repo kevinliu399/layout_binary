@@ -1,9 +1,10 @@
 (* By Kevin Liu (261136372), David Zhou(261135446), and Yessine Chaari (261179816) *)
 
+exception NotImplemented
+
 (********************************************************************
 ******************** TYPES AND HELPER FUNCTIONS *********************
 ********************************************************************)
-exception NotImplemented
 
 type 'a node_data = {
   v: 'a;
@@ -19,11 +20,44 @@ and 'a tree =
   | Empty
   | Node of 'a node_data
 
+type contour = {
+  leftmost: float;   (* leftmost x position at each level *)
+  rightmost: float;  (* rightmost x position at each level *)
+  height: int        (* height of this contour *)
+}
+
+(* String representation of a tree node *)
+let rec string_of_tree tree =
+  match tree with
+  | Empty -> "Empty"
+  | Node {v; l; r; _} ->
+      let left = match l with Some t -> string_of_tree t | None -> "None" in
+      let right = match r with Some t -> string_of_tree t | None -> "None" in
+      Printf.sprintf "Node(%s, left: %s, right: %s)" v left right
+
+(* String representation of a node *)
+let string_of_node node =
+  let left = match node.l with
+    | Some _ -> "Some"
+    | None -> "None"
+  in
+  let right = match node.r with
+    | Some _ -> "Some"
+    | None -> "None"
+  in
+  Printf.sprintf
+    "Node(v=%s, x=%.2f, y=%.2f, mod_val=%.2f, shift_val=%.2f, xf=%.2f, l=%s, r=%s)"
+    node.v !(node.x) !(node.y) !(node.mod_val) !(node.shift_val) !(node.xf) left right
+
 (* Retrieves the x coordinate of a node *)
 let get_x (tree: 'a tree) : float = 
   match tree with
   | Empty -> 0.0
   | Node n -> !(n.x)
+
+  let get_xf tree = match tree with
+  | Empty -> 0.0
+  | Node n -> !(n.xf)
 
 (* Get the maximum depth of a tree *)
 let rec get_max_depth (tree: 'a tree) : int =
@@ -36,63 +70,28 @@ let rec get_max_depth (tree: 'a tree) : int =
       let right_depth = match n.r with
         | Some right -> get_max_depth right
         | None -> 0 in
-      1 + max left_depth right_depth
+      1 + max left_depth right_depth 
 
-(* Get the descendant at a specific depth *)
-let rec get_descendant (tree: 'a tree) (current_depth: int) (target_depth: int)
-    (first: 'a node_data -> 'a tree option) (second: 'a node_data -> 'a tree option) : 'a tree option =
-  match tree with
-  | Empty -> None
-  | Node n when current_depth = target_depth -> Some (Node n)
-  | Node n ->
-      (* Try the first direction *)
-      let first_child = first n in
-      match first_child with
-      | Some child -> 
-          let first_result = get_descendant child (current_depth + 1) target_depth first second in
-          if first_result <> None then first_result
-          else (
-            (* If first direction fails, try the second direction *)
-            let second_child = second n in
-            match second_child with
-            | Some child -> get_descendant child (current_depth + 1) target_depth first second
-            | None -> None
-          )
-      | None -> 
-          (* If first direction doesn't exist, try the second direction *)
-          let second_child = second n in
-          match second_child with
-          | Some child -> get_descendant child (current_depth + 1) target_depth first second
-          | None -> None
+(* Create empty contour *)
+let make_empty_contour () = {
+  leftmost = max_float;
+  rightmost = -.max_float;
+  height = 0
+}
 
-(* Get rightmost descendant: tries right first, then left *)
-let get_rightmost_descendant tree current_depth target_depth =
-  get_descendant tree current_depth target_depth (fun n -> n.r) (fun n -> n.l)  
-
-(* Get leftmost descendant: tries left first, then right *)
-let get_leftmost_descendant tree current_depth target_depth =
-  get_descendant tree current_depth target_depth (fun n -> n.l) (fun n -> n.r) 
+(* Merge two contours and return required shift amount *)
+let merge_contours left_c right_c min_distance =
+  let separation = right_c.leftmost -. left_c.rightmost in
+  if separation < min_distance then
+    let shift = min_distance -. separation in
+    Printf.printf "Conflict detected! Required shift: %.2f\n" shift;
+    shift
+  else
+    0.0
 
 (********************************************************************
 ************************** MAIN ALGORITHM ***************************
 ********************************************************************)
-
-(* Applies a shift only to the right sibling of a node *)
-let rec apply_shift_to_siblings (prev: 'a node_data option) (shift: float) : unit =
-  let rec apply_shift (node: 'a tree) (shift: float) : unit =
-    match node with
-    | Empty -> ()
-    | Node {x; mod_val; l; r; _} ->
-        x := !x +. shift;
-        (match l with Some left -> apply_shift left shift | None -> ());
-        (match r with Some right -> apply_shift right shift | None -> ())
-  in
-  match prev with
-  | None -> ()
-  | Some parent ->
-      match parent.r with
-      | Some right -> apply_shift right shift
-      | None -> ()
 
 let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (depth: int) : unit =
   match tree with
@@ -124,66 +123,84 @@ let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (d
         | Some (Node parent) -> 
             (match parent.r with
              | Some (Node right_sibling) ->
-                 let new_right_x = !(right_sibling.x) +. shift_amount in
-                 right_sibling.x := new_right_x
+                 (* Only shift if the right sibling has children *)
+                 if right_sibling.l <> None || right_sibling.r <> None then begin
+                   let new_right_x = !(right_sibling.x) +. shift_amount in
+                   right_sibling.x := new_right_x;
+                   right_sibling.shift_val := !(right_sibling.shift_val) +. shift_amount;
+                   Printf.printf "Shift applied to node %s: %.2f\n" right_sibling.v shift_amount
+                 end
              | Some Empty | None -> ())
         | None | Some Empty -> ()
       else if is_right && (n.l != None || n.r != None) then
         n.mod_val := !(n.x) -. children_midpoint
 
-let rec traversal_two (tree: 'a tree) (ancestor_mods: float list) : unit =
-  
-  (* Helper function to check subtree conflicts, using only xf for position *)
-  let check_subtree_conflicts (right_tree: 'a tree) (left_tree: 'a tree) (subtree_distance: float) : float =
-    let max_depth = max (get_max_depth right_tree) (get_max_depth left_tree) in
-    let max_shift = ref 0.0 in
 
-    for depth = 0 to max_depth do
-      match (get_rightmost_descendant left_tree 0 depth, 
-            get_leftmost_descendant right_tree 0 depth) with
-      | Some (Node left_contour), Some (Node right_contour) -> 
-          let left_x = !(left_contour.xf) in
-          let right_x = !(right_contour.xf) in
-
-          let required_shift = left_x +. subtree_distance -. right_x in
-          if required_shift > !max_shift then
-            max_shift := required_shift
-      | _ -> ()
-    done;
-    !max_shift
-  in
-
+let rec traversal_two (tree: 'a tree) (ancestor_mods: float list) (parent_right_sibling: 'a tree option) : contour = 
   match tree with
-  | Empty -> ()
+  | Empty -> make_empty_contour()
   | Node n ->
       let current_mods = List.fold_left (+.) 0.0 ancestor_mods in
-      n.xf := !(n.x) +. current_mods;  
+      n.xf := !(n.x) +. current_mods;
 
-      (match n.l with 
-       | Some left -> traversal_two left (!(n.mod_val) :: ancestor_mods)
-       | None -> ());
+      (* Initialize contour *)
+      let this_contour = {
+        leftmost = !(n.xf);
+        rightmost = !(n.xf);
+        height = 1
+      } in
+      
+      (* Process subtrees and merge their contours *)
+      match (n.l, n.r) with
+      | (None, None) -> this_contour
 
-      (match n.r with
-       | Some right -> 
-           traversal_two right (!(n.mod_val) :: ancestor_mods);
-           (match n.l with
-            | Some left -> 
-                let shift = check_subtree_conflicts right left 1.0 in
-                if shift > 0.0 then
-                  (match right with
-                   | Node right_data -> 
-                       right_data.shift_val := shift;  
-                   | Empty -> ())
-            | None -> ())
-       | None -> ())
+      | (Some left, None) ->
+          let left_contour = traversal_two left (!(n.mod_val) :: ancestor_mods) None in
+          { 
+            leftmost = min this_contour.leftmost left_contour.leftmost;
+            rightmost = max this_contour.rightmost left_contour.rightmost;
+            height = max this_contour.height (left_contour.height + 1)
+          }
+      
+      | (None, Some right) ->
+          let right_contour = traversal_two right (!(n.mod_val) :: ancestor_mods) None in
+          {
+            leftmost = min this_contour.leftmost right_contour.leftmost;
+            rightmost = max this_contour.rightmost right_contour.rightmost;
+            height = max this_contour.height (right_contour.height + 1)
+          }
+      
+      | (Some left, Some right) ->
+          let left_contour = traversal_two left (!(n.mod_val) :: ancestor_mods) (Some right) in
+          let right_contour = traversal_two right (!(n.mod_val) :: ancestor_mods) None in
+
+          (* Check for conflicts between subtrees *)
+          let shift = merge_contours left_contour right_contour 0.5 in
+          if shift > 0.0 then (
+            (* Apply shift to the parent's right sibling (which is the right subtree) *)
+            match parent_right_sibling with
+            | Some (Node right_sibling) -> 
+                right_sibling.shift_val := shift;
+                Printf.printf "Shift applied to node %s: %.2f\n" right_sibling.v shift
+            | None | Some Empty -> ()
+          );
+
+          {
+            leftmost = min (min this_contour.leftmost left_contour.leftmost) 
+                          right_contour.leftmost;
+            rightmost = max (max this_contour.rightmost left_contour.rightmost)
+                            right_contour.rightmost;
+            height = max this_contour.height 
+                        (max (left_contour.height + 1) (right_contour.height + 1))
+          }
 
 let traversal_three (tree: 'a tree) : unit =
   let rec process_node node acc_mod acc_shift =
     match node with
     | Empty -> ()
-    | Node {x; mod_val; shift_val; l; r; _} ->
+    | Node {x; mod_val; shift_val; xf; l; r; _} ->
         let final_x = !x +. acc_mod +. acc_shift +. !shift_val in
-        x := final_x;
+        xf := final_x;
 
         let new_acc_mod = acc_mod +. !mod_val in
         let new_acc_shift = acc_shift +. !shift_val in
@@ -193,27 +210,31 @@ let traversal_three (tree: 'a tree) : unit =
   in
   process_node tree 0.0 0.0
 
-let fix_root (tree: 'a tree) : unit =
+let fix_root (tree: 'a tree) =
   match tree with
   | Empty -> ()
   | Node n -> match (n.l, n.r) with
-      | (Some left, Some right) ->
-          let left_x = get_x left in
-          let right_x = get_x right in
-          let root_x = (left_x +. right_x) /. 2.0 in
-          n.x := root_x
-      | _ -> ()
+    | (Some left, Some right) ->
+        let left_x = get_xf left in
+        let right_x = get_xf right in 
+        let root_x = (left_x +. right_x) /. 2.0 in 
+        n.xf := root_x
+    | _ -> ()
 
 (********************************************************************
-*********** BELOW IS THE TESTER - DO NOT MODIFY *********************
+************************** MAIN FUNCTION ***************************
 ********************************************************************)
 
 let main tree =
   traversal_one tree false None 0;
-  traversal_two tree [] ;
+  traversal_two tree [] None;  (* Corrected function call *)
   traversal_three tree;
   fix_root tree;
   ()
+
+(********************************************************************
+*********** BELOW IS SOME TEST CASES - DO NOT MODIFY ****************
+********************************************************************)
 
 let create_node value x_val y_val mod_val shift_val left right =
   Node {
@@ -227,42 +248,42 @@ let create_node value x_val y_val mod_val shift_val left right =
     r = right;
   }
   
-  let test_tree = 
-    create_node "N" 0.0 0.0 0.0 0.0
-      (Some (
+let test_tree = 
+  create_node "N" 0.0 0.0 0.0 0.0
+    (Some (
         create_node "K" 0.0 0.0 0.0 0.0
           (Some (
-            create_node "C" 0.0 0.0 0.0 0.0 
-              (Some (
-                create_node "A" 0.0 0.0 0.0 0.0 None None
-              )) 
-              (Some (
-                create_node "E" 0.0 0.0 0.0 0.0 
-                  (Some (
-                    create_node "D" 0.0 0.0 0.0 0.0 None None
+              create_node "C" 0.0 0.0 0.0 0.0 
+                (Some (
+                    create_node "A" 0.0 0.0 0.0 0.0 None None
                   )) 
-                  (Some (
-                    create_node "G" 0.0 0.0 0.0 0.0 None None
+                (Some (
+                    create_node "E" 0.0 0.0 0.0 0.0 
+                      (Some (
+                          create_node "D" 0.0 0.0 0.0 0.0 None None
+                        )) 
+                      (Some (
+                          create_node "G" 0.0 0.0 0.0 0.0 None None
+                        ))
                   ))
-              ))
-          )) 
+            )) 
           (Some (
-            create_node "M" 0.0 0.0 0.0 0.0 None None
-          ))
+              create_node "M" 0.0 0.0 0.0 0.0 None None
+            ))
       ))
-      (Some (
+    (Some (
         create_node "U" 0.0 0.0 0.0 0.0
           (Some (
-            create_node "P" 0.0 0.0 0.0 0.0 None 
-              (Some (
-                create_node "Q" 0.0 0.0 0.0 0.0 None None
-              ))
-          ))
+              create_node "P" 0.0 0.0 0.0 0.0 None 
+                (Some (
+                    create_node "Q" 0.0 0.0 0.0 0.0 None None
+                  ))
+            ))
           None
       ))
   
 
-(* let test_tree2 = 
+let test_tree2 = 
   create_node "A" 0.0 0.0 0.0 0.0
     None
     (Some (create_node "B" 0.0 0.0 0.0 0.0
@@ -270,7 +291,7 @@ let create_node value x_val y_val mod_val shift_val left right =
              (Some (create_node "C" 0.0 0.0 0.0 0.0
                       None
                       (Some (create_node "D" 0.0 0.0 0.0 0.0 None None))))))
-
+  
 let test_tree3 = 
   create_node "A" 0.0 0.0 0.0 0.0
     (Some (create_node "B" 0.0 0.0 0.0 0.0
@@ -278,8 +299,16 @@ let test_tree3 =
                       (Some (create_node "D" 0.0 0.0 0.0 0.0 None None))
                       None))
              None))
-    None *)
+    None
 
+let test_tree4 = 
+  create_node "A" 0.0 0.0 0.0 0.0
+    (Some (create_node "B" 0.0 0.0 0.0 0.0
+              (Some (create_node "D" 0.0 0.0 0.0 0.0 None None))
+              (Some (create_node "E" 0.0 0.0 0.0 0.0 None None))))
+    (Some (create_node "C" 0.0 0.0 0.0 0.0
+              (Some (create_node "F" 0.0 0.0 0.0 0.0 None None))
+              (Some (create_node "G" 0.0 0.0 0.0 0.0 None None))))
 
 (* Print function *)
 let rec print_tree_coords = function
@@ -292,8 +321,8 @@ let rec print_tree_coords = function
 
 let () =
   Printf.printf "Before first pass:\n";
-  print_tree_coords test_tree;
+  print_tree_coords test_tree3;
   
   Printf.printf "\nAfter all passes:\n";
-  main test_tree;  (* Modify test_tree name to test different trees*)
-  print_tree_coords test_tree
+  main test_tree3;  (* Modify test_tree name to test different trees*)
+  print_tree_coords test_tree3 ;;
