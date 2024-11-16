@@ -52,14 +52,13 @@ let rec get_descendant (tree: 'a tree) (current_depth: int) (target_depth: int)
           let first_result = get_descendant child (current_depth + 1) target_depth first second in
           if first_result <> None then first_result
           else (
-            (* If first direction fails, try the second direction *)
             let second_child = second n in
             match second_child with
             | Some child -> get_descendant child (current_depth + 1) target_depth first second
             | None -> None
           )
       | None -> 
-          (* If first direction doesn't exist, try the second direction *)
+          (* Try the second direction if first does not exist *)
           let second_child = second n in
           match second_child with
           | Some child -> get_descendant child (current_depth + 1) target_depth first second
@@ -77,33 +76,18 @@ let get_leftmost_descendant tree current_depth target_depth =
 ************************** MAIN ALGORITHM ***************************
 ********************************************************************)
 
-(* Applies a shift only to the right sibling of a node *)
-let rec apply_shift_to_siblings (prev: 'a node_data option) (shift: float) : unit =
-  let rec apply_shift (node: 'a tree) (shift: float) : unit =
-    match node with
-    | Empty -> ()
-    | Node {x; mod_val; l; r; _} ->
-        x := !x +. shift;
-        (match l with Some left -> apply_shift left shift | None -> ());
-        (match r with Some right -> apply_shift right shift | None -> ())
-  in
-  match prev with
-  | None -> ()
-  | Some parent ->
-      match parent.r with
-      | Some right -> apply_shift right shift
-      | None -> ()
-
 let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (depth: int) : unit =
   match tree with
   | Empty -> ()
   | Node n ->
+     (* Assign initial x, y values for each node depending on its relative position *)
       n.x := (if is_right then !(n.x) +. 1.0 else 0.0);
       n.y := float_of_int depth;
       
       (match n.l with 
        | Some l -> traversal_one l false (Some tree) (depth + 1)
        | None -> ());
+
       (match n.r with
        | Some r -> traversal_one r true (Some tree) (depth + 1)
        | None -> ());
@@ -115,11 +99,13 @@ let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (d
         | (None, None) -> !(n.x)
       in
 
+      (* Center left nodes with children *)
       if not is_right && (n.l != None || n.r != None) then
         let original_x = !(n.x) in
         n.x := children_midpoint;
         let shift_amount = children_midpoint -. original_x in
         
+        (* Apply shift to right node *)
         match prev with
         | Some (Node parent) -> 
             (match parent.r with
@@ -128,6 +114,8 @@ let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (d
                  right_sibling.x := new_right_x
              | Some Empty | None -> ())
         | None | Some Empty -> ()
+      
+      (* Compute mod for right nodes with children *)
       else if is_right && (n.l != None || n.r != None) then
         n.mod_val := !(n.x) -. children_midpoint
 
@@ -177,6 +165,7 @@ let rec traversal_two (tree: 'a tree) (ancestor_mods: float list) : unit =
             | None -> ())
        | None -> ())
 
+(* Apply the final x values to the nodes by adding up the accumulated shift and mod values *)
 let traversal_three (tree: 'a tree) : unit =
   let rec process_node node acc_mod acc_shift =
     match node with
@@ -185,6 +174,7 @@ let traversal_three (tree: 'a tree) : unit =
         let final_x = !x +. acc_mod +. acc_shift +. !shift_val in
         x := final_x;
 
+        (* update accumulator with the latest mod and shift value *)
         let new_acc_mod = acc_mod +. !mod_val in
         let new_acc_shift = acc_shift +. !shift_val in
 
@@ -193,6 +183,7 @@ let traversal_three (tree: 'a tree) : unit =
   in
   process_node tree 0.0 0.0
 
+(* Make sure that the root is centered over its two children *)
 let fix_root (tree: 'a tree) : unit =
   match tree with
   | Empty -> ()
@@ -227,42 +218,41 @@ let create_node value x_val y_val mod_val shift_val left right =
     r = right;
   }
   
-  let test_tree = 
-    create_node "N" 0.0 0.0 0.0 0.0
-      (Some (
-        create_node "K" 0.0 0.0 0.0 0.0
-          (Some (
-            create_node "C" 0.0 0.0 0.0 0.0 
-              (Some (
-                create_node "A" 0.0 0.0 0.0 0.0 None None
-              )) 
-              (Some (
-                create_node "E" 0.0 0.0 0.0 0.0 
-                  (Some (
-                    create_node "D" 0.0 0.0 0.0 0.0 None None
-                  )) 
-                  (Some (
-                    create_node "G" 0.0 0.0 0.0 0.0 None None
-                  ))
-              ))
-          )) 
-          (Some (
-            create_node "M" 0.0 0.0 0.0 0.0 None None
-          ))
-      ))
-      (Some (
-        create_node "U" 0.0 0.0 0.0 0.0
-          (Some (
-            create_node "P" 0.0 0.0 0.0 0.0 None 
-              (Some (
-                create_node "Q" 0.0 0.0 0.0 0.0 None None
-              ))
-          ))
-          None
-      ))
+let test_tree = 
+  create_node "N" 0.0 0.0 0.0 0.0
+    (Some (
+      create_node "K" 0.0 0.0 0.0 0.0
+        (Some (
+          create_node "C" 0.0 0.0 0.0 0.0 
+            (Some (
+              create_node "A" 0.0 0.0 0.0 0.0 None None
+            )) 
+            (Some (
+              create_node "E" 0.0 0.0 0.0 0.0 
+                (Some (
+                  create_node "D" 0.0 0.0 0.0 0.0 None None
+                )) 
+                (Some (
+                  create_node "G" 0.0 0.0 0.0 0.0 None None
+                ))
+            ))
+        )) 
+        (Some (
+          create_node "M" 0.0 0.0 0.0 0.0 None None
+        ))
+    ))
+    (Some (
+      create_node "U" 0.0 0.0 0.0 0.0
+        (Some (
+          create_node "P" 0.0 0.0 0.0 0.0 None 
+            (Some (
+              create_node "Q" 0.0 0.0 0.0 0.0 None None
+            ))
+        ))
+        None
+    ))
   
-
-(* let test_tree2 = 
+let test_tree2 = 
   create_node "A" 0.0 0.0 0.0 0.0
     None
     (Some (create_node "B" 0.0 0.0 0.0 0.0
@@ -278,10 +268,8 @@ let test_tree3 =
                       (Some (create_node "D" 0.0 0.0 0.0 0.0 None None))
                       None))
              None))
-    None *)
+    None
 
-
-(* Print function *)
 let rec print_tree_coords = function
   | Empty -> ()
   | Node {v; x; y; mod_val; shift_val; xf; l; r} ->
@@ -292,8 +280,71 @@ let rec print_tree_coords = function
 
 let () =
   Printf.printf "Before first pass:\n";
-  print_tree_coords test_tree;
+  print_tree_coords test_tree2;
   
   Printf.printf "\nAfter all passes:\n";
-  main test_tree;  (* Modify test_tree name to test different trees*)
-  print_tree_coords test_tree
+  main test_tree2;
+  print_tree_coords test_tree2
+
+
+(*
+Results as of 2024-11-15
+
+TEST 1:
+
+Before first pass:
+Node N: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node K: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node C: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node A: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node E: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node D: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node G: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node M: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node U: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node P: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node Q: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+
+After all passes:
+Node N: (x=1.8, y=0.0, mod=0.0, shift=0.0, xf=1.5)
+Node K: (x=1.0, y=1.0, mod=0.0, shift=0.0, xf=1.0)
+Node C: (x=0.5, y=2.0, mod=0.0, shift=0.0, xf=0.5)
+Node A: (x=0.0, y=3.0, mod=0.0, shift=0.0, xf=0.0)
+Node E: (x=1.0, y=3.0, mod=0.5, shift=0.0, xf=1.0)
+Node D: (x=0.5, y=4.0, mod=0.0, shift=0.0, xf=0.5)
+Node G: (x=1.5, y=4.0, mod=0.0, shift=0.0, xf=1.5)
+Node M: (x=1.5, y=2.0, mod=0.0, shift=0.0, xf=1.5)
+Node U: (x=2.5, y=1.0, mod=1.0, shift=0.5, xf=2.0)
+Node P: (x=2.5, y=2.0, mod=0.0, shift=0.0, xf=2.0)
+Node Q: (x=2.5, y=3.0, mod=0.0, shift=0.0, xf=2.0)
+
+TEST 2:
+
+Before first pass:
+Node A: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node B: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node E: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node C: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node D: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+
+After all passes:
+Node A: (x=1.0, y=0.0, mod=0.0, shift=0.0, xf=1.0)
+Node B: (x=1.0, y=1.0, mod=0.5, shift=0.0, xf=1.0)
+Node E: (x=0.5, y=2.0, mod=0.0, shift=0.0, xf=0.5)
+Node C: (x=1.5, y=2.0, mod=0.0, shift=0.0, xf=1.5)
+Node D: (x=1.5, y=3.0, mod=0.0, shift=0.0, xf=1.5)
+
+TEST 3:
+Before first pass:
+Node A: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node B: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node C: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node D: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+
+After all passes:
+Node A: (x=0.0, y=0.0, mod=0.0, shift=0.0, xf=0.0)
+Node B: (x=0.0, y=1.0, mod=0.0, shift=0.0, xf=0.0)
+Node C: (x=0.0, y=2.0, mod=0.0, shift=0.0, xf=0.0)
+Node D: (x=0.0, y=3.0, mod=0.0, shift=0.0, xf=0.0)
+
+*)
