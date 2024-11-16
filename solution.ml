@@ -6,6 +6,7 @@ exception NotImplemented
 ******************** TYPES AND HELPER FUNCTIONS *********************
 ********************************************************************)
 
+(* Datatype Definition *)
 type 'a node_data = {
   v: 'a;
   x: float ref;
@@ -20,14 +21,18 @@ and 'a tree =
   | Empty
   | Node of 'a node_data
 
-
-(* Retrieves the x coordinate of a node *)
+(* Retrieves node attributes *)
 let get_x (tree: 'a tree) : float = 
   match tree with
   | Empty -> 0.0
   | Node n -> !(n.x)
 
-(* Helpers for traversal 2*)
+let get_xf tree = 
+  match tree with
+  | Empty -> 0.0
+  | Node n -> !(n.xf)
+
+(* Helpers for traversal 2 *)
 let shift_distance = 0.5
 type contour = {
   leftmost: float;   
@@ -39,23 +44,18 @@ let make_empty_contour () = {
   rightmost = -.max_float;
   height = 0
 }
+
 (* Merge two contours and return required shift amount *)
 let merge_contours left_c right_c min_distance =
   let separation = right_c.leftmost -. left_c.rightmost in
   if separation < min_distance then
     let shift = min_distance -. separation in
-    Printf.printf "Conflict detected! Required shift: %.2f\n" shift;
     shift
   else
     0.0
 
-    
-let get_xf tree = match tree with
-| Empty -> 0.0
-| Node n -> !(n.xf)
-
 (********************************************************************
-************************** MAIN ALGORITHM ***************************
+****************** MAIN ALGORITHM - TRAVERSALS **********************
 ********************************************************************)
 
 let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (depth: int) : unit =
@@ -144,7 +144,6 @@ let rec traversal_two (tree: 'a tree) (ancestor_mods: float list) (right_sibling
             match right_sibling with
             | Some (Node right_sibling) -> 
                 right_sibling.shift_val := shift_distance;
-                Printf.printf "Shift applied to node %s: %.2f\n" right_sibling.v shift_distance
             | None | Some Empty -> ()
           );
 
@@ -189,6 +188,7 @@ let traversal_three (tree: 'a tree) : unit =
   in
   process_node tree 0.0 0.0
 
+(* Align root to center around its children *)
 let fix_root (tree: 'a tree) =
   match tree with
   | Empty -> ()
