@@ -156,7 +156,7 @@ let check_subtree_conflicts right_tree left_tree subtree_distance =
   !max_shift
 
 (* First pass for accumulating xf modifications without shifts *)
-let rec first_pass_part2 tree ancestor_mods =
+let rec first_pass_p2 tree ancestor_mods =
   match tree with
   | Empty -> ()
   | Node n ->
@@ -166,13 +166,13 @@ let rec first_pass_part2 tree ancestor_mods =
 
       (* Process left subtree *)
       (match n.l with 
-       | Some left -> first_pass_part2 left (!(n.mod_val) :: ancestor_mods)
+       | Some left -> first_pass_p2 left (!(n.mod_val) :: ancestor_mods)
        | None -> ());
 
       (* Process right subtree *)
       (match n.r with
        | Some right -> 
-           first_pass_part2 right (!(n.mod_val) :: ancestor_mods);
+           first_pass_p2 right (!(n.mod_val) :: ancestor_mods);
 
            (* Check conflicts with left subtree *)
            (match n.l with
@@ -187,8 +187,8 @@ let rec first_pass_part2 tree ancestor_mods =
        | None -> ())
 
 (* Start the first pass with an empty ancestor list for mods *)
-let start_first_pass_part2 tree =
-  first_pass_part2 tree [] 
+let start_first_pass_p2 tree =
+  first_pass_p2 tree [] 
   
 (* Second Pass *)
 let second_pass tree =
@@ -210,12 +210,24 @@ let second_pass tree =
   process_node tree 0.0 0.0
 
 
+let fix_root tree =
+  match tree with
+  | Empty -> ()
+  | Node n -> match (n.l, n.r) with
+      | (Some left, Some right) ->
+          let left_x = get_x left in
+          let right_x = get_x right in
+          let root_x = (left_x +. right_x) /. 2.0 in
+          n.x := root_x
+      | _ -> ()
+
 
 (* Main function *)
 let main tree =
   first_pass_p1 tree false None 0;
-  start_first_pass_part2 tree;
+  start_first_pass_p2 tree;
   second_pass tree;
+  fix_root tree;
   ()
 
 (********************************************************************
