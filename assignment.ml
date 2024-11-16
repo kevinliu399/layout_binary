@@ -1,11 +1,10 @@
 (* By Kevin Liu (261136372), David Zhou(261135446), and Yessine Chaari (261179816) *)
 
 (********************************************************************
-******************** Types and helper functions *********************
+******************** TYPES AND HELPER FUNCTIONS *********************
 ********************************************************************)
 exception NotImplemented
 
-(* Type for tree nodes *)
 type 'a node_data = {
   v: 'a;
   x: float ref;
@@ -39,73 +38,56 @@ let rec get_max_depth (tree: 'a tree) : int =
         | None -> 0 in
       1 + max left_depth right_depth
 
-(* Get the rightmost descendant at a specific depth *)
-let rec get_rightmost_descendant (tree: 'a tree) (current_depth: int) (target_depth: int) : 'a tree option =
-  match tree with
-  | Empty -> None
-  | Node n when current_depth = target_depth -> Some (Node n)
-  | Node n -> 
-      let right_result = match n.r with
-        | Some right -> get_rightmost_descendant right (current_depth + 1) target_depth
-        | None -> None in
-      if right_result <> None then right_result
-      else match n.l with
-        | Some left -> get_rightmost_descendant left (current_depth + 1) target_depth
-        | None -> None
-
-(* Get the leftmost descendant at a specific depth *)
-let rec get_leftmost_descendant (tree: 'a tree) (current_depth: int) (target_depth: int) : 'a tree option =
+(* Get the descendant at a specific depth *)
+let rec get_descendant (tree: 'a tree) (current_depth: int) (target_depth: int)
+    (first: 'a node_data -> 'a tree option) (second: 'a node_data -> 'a tree option) : 'a tree option =
   match tree with
   | Empty -> None
   | Node n when current_depth = target_depth -> Some (Node n)
   | Node n ->
-      let left_result = match n.l with
-        | Some left -> get_leftmost_descendant left (current_depth + 1) target_depth
-        | None -> None in
-      if left_result <> None then left_result
-      else match n.r with
-        | Some right -> get_leftmost_descendant right (current_depth + 1) target_depth
-        | None -> None
+      (* Try the first direction *)
+      let first_child = first n in
+      match first_child with
+      | Some child -> 
+          let first_result = get_descendant child (current_depth + 1) target_depth first second in
+          if first_result <> None then first_result
+          else (
+            (* If first direction fails, try the second direction *)
+            let second_child = second n in
+            match second_child with
+            | Some child -> get_descendant child (current_depth + 1) target_depth first second
+            | None -> None
+          )
+      | None -> 
+          (* If first direction doesn't exist, try the second direction *)
+          let second_child = second n in
+          match second_child with
+          | Some child -> get_descendant child (current_depth + 1) target_depth first second
+          | None -> None
 
-(* Calculate x coordinate using accumulated xf *)
-let calculate_x_coordinate (node: 'a node_data) : float =
-  !(node.x) +. !(node.xf)
+(* Get rightmost descendant: tries right first, then left *)
+let get_rightmost_descendant tree current_depth target_depth =
+  get_descendant tree current_depth target_depth (fun n -> n.r) (fun n -> n.l)  
 
-(* Check subtree conflicts, using only xf for position *)
-let check_subtree_conflicts (right_tree: 'a tree) (left_tree: 'a tree) (subtree_distance: float) : float =
-  let max_depth = max (get_max_depth right_tree) (get_max_depth left_tree) in
-  let max_shift = ref 0.0 in
-
-  for depth = 0 to max_depth do
-    match (get_rightmost_descendant left_tree 0 depth, 
-           get_leftmost_descendant right_tree 0 depth) with
-    | Some (Node left_contour), Some (Node right_contour) -> 
-        let left_x = !(left_contour.xf) in
-        let right_x = !(right_contour.xf) in
-
-        let required_shift = left_x +. subtree_distance -. right_x in
-        if required_shift > !max_shift then
-          max_shift := required_shift
-    | _ -> ()
-  done;
-  !max_shift
+(* Get leftmost descendant: tries left first, then right *)
+let get_leftmost_descendant tree current_depth target_depth =
+  get_descendant tree current_depth target_depth (fun n -> n.l) (fun n -> n.r) 
 
 (********************************************************************
-******************** WRITE YOUR CODE HERE****** *********************
+************************** MAIN ALGORITHM ***************************
 ********************************************************************)
 
 (* Applies a shift only to the right sibling of a node *)
 let rec apply_shift_to_siblings (prev: 'a node_data option) (shift: float) : unit =
   raise NotImplemented
 
-(* First Pass *)
-let rec first_pass_p1 (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (depth: int) : unit =
+let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (depth: int) : unit =
   raise NotImplemented
 
-let rec first_pass_p2 (tree: 'a tree) (ancestor_mods: float list) : unit =
+let rec traversal_two (tree: 'a tree) (ancestor_mods: float list) : unit =
   raise NotImplemented
 
-let second_pass (tree: 'a tree) : unit =
+let traversal_three (tree: 'a tree) : unit =
   raise NotImplemented
 
 let fix_root (tree: 'a tree) : unit =
