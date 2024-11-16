@@ -227,16 +227,42 @@ let create_node value x_val y_val mod_val shift_val left right =
     r = right;
   }
   
-let test_tree = 
-  create_node "A" 0.0 0.0 0.0 0.0
-    (Some (create_node "B" 0.0 0.0 0.0 0.0
-             (Some (create_node "D" 0.0 0.0 0.0 0.0 None None))
-             (Some (create_node "E" 0.0 0.0 0.0 0.0 None None))))
-    (Some (create_node "C" 0.0 0.0 0.0 0.0
-             (Some (create_node "F" 0.0 0.0 0.0 0.0 None None))
-             (Some (create_node "G" 0.0 0.0 0.0 0.0 None None))))
+  let test_tree = 
+    create_node "N" 0.0 0.0 0.0 0.0
+      (Some (
+        create_node "K" 0.0 0.0 0.0 0.0
+          (Some (
+            create_node "C" 0.0 0.0 0.0 0.0 
+              (Some (
+                create_node "A" 0.0 0.0 0.0 0.0 None None
+              )) 
+              (Some (
+                create_node "E" 0.0 0.0 0.0 0.0 
+                  (Some (
+                    create_node "D" 0.0 0.0 0.0 0.0 None None
+                  )) 
+                  (Some (
+                    create_node "G" 0.0 0.0 0.0 0.0 None None
+                  ))
+              ))
+          )) 
+          (Some (
+            create_node "M" 0.0 0.0 0.0 0.0 None None
+          ))
+      ))
+      (Some (
+        create_node "U" 0.0 0.0 0.0 0.0
+          (Some (
+            create_node "P" 0.0 0.0 0.0 0.0 None 
+              (Some (
+                create_node "Q" 0.0 0.0 0.0 0.0 None None
+              ))
+          ))
+          None
+      ))
+  
 
-let test_tree2 = 
+(* let test_tree2 = 
   create_node "A" 0.0 0.0 0.0 0.0
     None
     (Some (create_node "B" 0.0 0.0 0.0 0.0
@@ -252,7 +278,7 @@ let test_tree3 =
                       (Some (create_node "D" 0.0 0.0 0.0 0.0 None None))
                       None))
              None))
-    None
+    None *)
 
 
 (* Print function *)
