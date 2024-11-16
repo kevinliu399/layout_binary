@@ -56,16 +56,20 @@ let get_xf tree = match tree with
 ************************** MAIN ALGORITHM ***************************
 ********************************************************************)
 
+(* Step 1: Assign initial x and mod values *)
 let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (depth: int) : unit =
   raise NotImplemented
 
+(* Step 2: Fix overlap and assign shift value *)
 let rec traversal_two (tree: 'a tree) (ancestor_mods: float list) (right_sibling: 'a tree option) : contour = 
   (* Refer to the top of the code for helper functions that can assist you in the implementation *)
   raise NotImplemented
 
+(* Step 3: Compute final x positions for all nodes *)
 let traversal_three (tree: 'a tree) : unit =
   raise NotImplemented
 
+(* Step 4: Fix the root node *)
 let fix_root (tree: 'a tree) =
   raise NotImplemented
 
