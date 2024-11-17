@@ -1,4 +1,4 @@
-(* By Kevin Liu (261136372), David Zhou(261135446), and Yessine Chaari (261179816) *)
+(* By Kevin Liu (261135372), David Zhou(261135446), and Yessine Chaari (261179816) *)
 
 exception NotImplemented
 
