@@ -303,8 +303,8 @@ let rec print_tree_coords = function
 
 let () =
   Printf.printf "Before first pass:\n";
-  print_tree_coords test_tree4;
+  print_tree_coords test_tree;
   
   Printf.printf "\nAfter all passes:\n";
-  main test_tree4;  
-  print_tree_coords test_tree4 ;;
+  main test_tree;  
+  print_tree_coords test_tree ;;
