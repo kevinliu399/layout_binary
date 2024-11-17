@@ -58,6 +58,8 @@ let merge_contours left_c right_c min_distance =
 ****************** MAIN ALGORITHM - TRAVERSALS **********************
 ********************************************************************)
 
+
+
 let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (depth: int) : unit =
   match tree with
   | Empty -> ()
@@ -100,6 +102,8 @@ let rec traversal_one (tree: 'a tree) (is_right: bool) (prev: 'a tree option) (d
       (* Handle right nodes with children *)
       else if is_right && (n.l != None || n.r != None) then
         n.mod_val := !(n.x) -. children_midpoint
+
+
 
 let rec traversal_two (tree: 'a tree) (ancestor_mods: float list) (right_sibling: 'a tree option) : contour = 
   match tree with
@@ -168,6 +172,8 @@ let rec traversal_two (tree: 'a tree) (ancestor_mods: float list) (right_sibling
             height = max this_contour.height 
                 (max (left_contour.height + 1) (right_contour.height + 1))
           }
+
+
 
 let traversal_three (tree: 'a tree) : unit =
   let rec process_node node acc_mod acc_shift =
